@@ -140,15 +140,18 @@ export default {
                     <option value="" disabled>Choisissez un participant</option>
                     <option v-for="participant in participants" :key="participant" :value="participant">{{ participant }}</option>
                 </select>
-                <button type="button" @click="addParticipant">+ Ajouter un participant</button>
+                <div class="add-button">
+                    <button type="button" @click="addParticipant">+ Ajouter un participant</button>
+                </div>
             </div>
-
             <div class="select-group">
                 <select v-model="newTask.typeId" required>
                     <option value="" disabled>Choisissez un type de tâche</option>
                     <option v-for="(type, index) in taskTypes" :key="index" :value="index">{{ type }}</option>
                 </select>
-                <button type="button" @click="addTaskType">+ Ajouter un type</button>
+                <div class="add-button">
+                    <button type="button" @click="addTaskType">+ Ajouter un type</button>
+                </div>
             </div>
             <button type="submit">{{ editingTask ? 'Mettre à jour' : 'Ajouter la tâche' }}</button>
         </form>
@@ -252,6 +255,12 @@ export default {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.add-button {
+    display: flex;
+    justify-content: flex-start;
+    padding-top: 5px;
+}
+
 .task-form input,
 .task-form select,
 .task-form textarea {
@@ -260,6 +269,7 @@ export default {
     border: 1px solid #ddd;
     font-size: 1rem;
     width: 100%;
+    max-width: 580px;
 }
 
 .task-form button {
