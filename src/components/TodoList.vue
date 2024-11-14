@@ -90,7 +90,6 @@ export default {
             const storedTasks = localStorage.getItem('tasks');
             const storedParticipants = localStorage.getItem('participants');
             const storedTypes = localStorage.getItem('taskTypes');
-
             if (storedTasks) this.tasks = JSON.parse(storedTasks);
             if (storedParticipants) this.participants = JSON.parse(storedParticipants);
             if (storedTypes) this.taskTypes = JSON.parse(storedTypes);
@@ -102,6 +101,10 @@ export default {
                 this.saveTasks();
             }
         },
+        removeParticipant(index) {
+            this.participants.splice(index, 1);
+            this.saveTasks();
+        },
         addTaskType() {
             const newType = prompt("Entrez le type de tâche :");
             if (newType && !this.taskTypes.includes(newType)) {
@@ -111,6 +114,13 @@ export default {
         },
         getTaskTypeLabel(typeId) {
             return this.taskTypes[typeId] || '';
+        },
+        togglePriority(task) {
+            const priorities = ['faible', 'moyenne', 'élevée'];
+            const currentPriorityIndex = priorities.indexOf(task.priority);
+            const nextPriority = priorities[(currentPriorityIndex + 1) % priorities.length];
+            task.priority = nextPriority;
+            this.saveTasks();
         }
     },
     mounted() {
@@ -119,14 +129,12 @@ export default {
 };
 </script>
 
-
 <template>
     <div class="todo-board">
         <form @submit.prevent="editingTask ? updateTask() : addTask()" class="task-form">
             <input v-model="newTask.title" placeholder="Titre de la tâche" required />
             <textarea v-model="newTask.description" placeholder="Description"></textarea>
             <input v-model="newTask.due_date" type="date" placeholder="Date d'échéance" />
-
             <div class="select-group">
                 <select v-model="newTask.participant" required>
                     <option value="" disabled>Choisissez un participant</option>
@@ -142,21 +150,12 @@ export default {
                 </select>
                 <button type="button" @click="addTaskType">+ Ajouter un type</button>
             </div>
-
             <button type="submit">{{ editingTask ? 'Mettre à jour' : 'Ajouter la tâche' }}</button>
         </form>
-
         <div class="columns">
             <div class="column" @dragover.prevent @drop="dropTask($event, 'todo')">
                 <h2>À faire</h2>
-                <div
-                v-for="task in tasks.todo"
-                :key="task.id"
-                :draggable="true"
-                @dragstart="dragStart(task)"
-                class="task"
-                :class="{ 'task-todo': task.status === 'todo' }"
-                >
+                <div v-for="task in tasks.todo" :key="task.id" :draggable="true" @dragstart="dragStart(task)" class="task" :class="{ 'task-todo': task.status === 'todo' }">
                     <div class="task">
                         <div class="task-header">
                             <h3 class="title">{{ task.title }}</h3>
@@ -172,23 +171,15 @@ export default {
                         </div>
                         <div class="task-actions">
                             <button @click="editTask(task)">Modifier</button>
+                            <button @click="togglePriority(task)" :class="task.priority">Priorité : {{ task.priority }}</button>
                             <button @click="deleteTask(task)">Supprimer</button>
                         </div>
                     </div>
-
                 </div>
             </div>
-
             <div class="column" @dragover.prevent @drop="dropTask($event, 'inProgress')">
                 <h2>En cours</h2>
-                <div
-                v-for="task in tasks.inProgress"
-                :key="task.id"
-                :draggable="true"
-                @dragstart="dragStart(task)"
-                class="task"
-                :class="{ 'task-in-progress': task.status === 'inProgress' }"
-                >
+                <div v-for="task in tasks.inProgress" :key="task.id" :draggable="true" @dragstart="dragStart(task)" class="task" :class="{ 'task-in-progress': task.status === 'inProgress' }">
                     <div class="task">
                         <div class="task-header">
                             <h3 class="title">{{ task.title }}</h3>
@@ -204,24 +195,17 @@ export default {
                         </div>
                         <div class="task-actions">
                             <button @click="editTask(task)">Modifier</button>
+                            <button @click="togglePriority(task)" :class="task.priority">Priorité : {{ task.priority }}</button>
                             <button @click="deleteTask(task)">Supprimer</button>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="column" @dragover.prevent @drop="dropTask($event, 'done')">
                 <div class="done-title">
                     <h2>Terminé</h2>
                 </div>
-                <div
-                v-for="task in tasks.done"
-                :key="task.id"
-                :draggable="true"
-                @dragstart="dragStart(task)"
-                class="task"
-                :class="{ 'task-done': task.status === 'done' }"
-                >
+                <div v-for="task in tasks.done" :key="task.id" :draggable="true" @dragstart="dragStart(task)" class="task" :class="{ 'task-done': task.status === 'done' }">
                     <div class="task">
                         <div class="task-header">
                             <h3 class="title">{{ task.title }}</h3>
@@ -237,6 +221,7 @@ export default {
                         </div>
                         <div class="task-actions">
                             <button @click="editTask(task)">Modifier</button>
+                            <button @click="togglePriority(task)" :class="task.priority">Priorité : {{ task.priority }}</button>
                             <button @click="deleteTask(task)">Supprimer</button>
                         </div>
                     </div>
@@ -246,45 +231,120 @@ export default {
     </div>
 </template>
 
+
 <style scoped>
 .todo-board {
-    width: 100%;
+    font-family: 'Arial', sans-serif;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.task-form {
     display: flex;
     flex-direction: column;
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.task-form input,
+.task-form select,
+.task-form textarea {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+    width: 100%;
+}
+
+.task-form button {
+    padding: 10px 20px;
+    background-color: #5c6bc0;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.task-form button:hover {
+    background-color: #3f51b5;
+}
+
+.participant-list {
+    margin-top: 15px;
+}
+
+.participant-list ul {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.participant-list li {
+    background-color: #e3f2fd;
+    padding: 10px 20px;
+    border-radius: 20px;
+    display: flex;
     align-items: center;
-    padding: 0 10px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.participant-list button {
+    margin-left: 10px;
+    background-color: #ff3d00;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.participant-list button:hover {
+    background-color: #d32f2f;
 }
 
 .columns {
     display: flex;
-    width: 100%;
     justify-content: space-between;
+    margin-top: 20px;
     gap: 20px;
     flex-wrap: wrap;
 }
 
 .column {
-    flex: 1;
-    padding: 10px;
-    background: #494949;
-    border-radius: 5px;
-    min-width: 250px;
-    max-width: 100%;
+    width: 32%;
+    padding: 15px;
+    background: #f1f1f1;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .column h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
     text-align: center;
-    color: white;
+    color: #333;
 }
 
 .task {
-    padding: 12px;
-    margin: 8px 0;
+    background-color: #ffffff;
     border-radius: 8px;
-    background-color: #f9f9f9;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
 }
 
 .task-header {
@@ -294,27 +354,23 @@ export default {
     margin-bottom: 10px;
 }
 
-.task-header .title {
-    font-weight: bold;
-    font-size: 1.2em;
-    color: #333;
+.task .title {
+    font-size: 1.2rem;
+    margin: 0;
 }
 
-.task-header .type {
-    font-size: 0.9em;
-    padding: 2px 8px;
-    background-color: #d1e8ff;
-    color: #005b99;
-    border-radius: 5px;
+.task .type {
+    background-color: #8e24aa;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9rem;
 }
 
 .task-details {
-    font-size: 0.9em;
-    color: #666;
     margin-top: 10px;
-    padding: 8px;
-    background-color: #f0f0f0;
-    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #666;
 }
 
 .task-details .participant {
@@ -326,88 +382,44 @@ export default {
     justify-content: space-between;
 }
 
-.description {
-    font-size: 0.95em;
-    color: #555;
-    margin-bottom: 10px;
+.task-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.task-actions button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin: 0 5px;
+}
+
+.task-actions button:hover {
+    background-color: #607d8b;
+    color: white;
+}
+
+.task-actions button:hover {
+    background-color: #607d8b;
+    color: white;
 }
 
 .task-todo {
     background-color: #ffcccc;
 }
+
 .task-in-progress {
     background-color: #fff4b3;
 }
+
 .task-done {
     background-color: #ccffcc;
     text-decoration: line-through;
     color: #777;
-}
-
-.task-form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 20px 0;
-    width: 100%;
-}
-
-.task-form input,
-.task-form textarea {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.task-form button {
-    align-self: flex-start;
-    padding: 8px 16px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.select-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.select-group select {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.select-group button {
-    flex-shrink: 0;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-
-.task-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
-}
-
-.task-actions button {
-    margin-right: 5px;
-    padding: 4px 10px;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.85em;
 }
 
 .task-actions button:first-of-type {
@@ -418,6 +430,24 @@ export default {
     background-color: #d9534f;
 }
 
+.task-actions button.faible {
+    background-color: #007bff;
+}
+
+.task-actions button.moyenne {
+    background-color: #FFCC00;
+}
+
+.task-actions button.élevée {
+    background-color: red;
+}
+
+@media (max-width: 1024px) {
+    .column {
+        width: 48%;
+    }
+}
+
 @media (max-width: 768px) {
     .columns {
         flex-direction: column;
@@ -426,8 +456,10 @@ export default {
 
     .column {
         width: 100%;
-        min-width: auto;
+    }
+
+    .task-form {
+        width: 100%;
     }
 }
-
 </style>
