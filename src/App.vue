@@ -23,66 +23,53 @@ export default {
 </script>
 
 <template>
-    <div id="app">
-        <nav class="nav">
-            <router-link to="/">Ma Todo Liste</router-link>
-            <router-link to="/review">Revue des tâches terminées</router-link>
+    <div id="app" class="min-h-screen flex flex-col bg-base-100">
+        <nav class="navbar bg-primary text-primary-content">
+            <div class="container mx-auto flex justify-between items-center">
+                <ul class="menu menu-horizontal p-0">
+                    <li><router-link to="/" class="text-white hover:text-blue-200">Ma Todo Liste</router-link></li>
+                    <li><router-link to="/review" class="text-white hover:text-blue-200">Revue des tâches terminées</router-link></li>
+                </ul>
+            </div>
         </nav>
-
-        <div class="main-container">
-            <router-view />
+        <div class="flex-grow flex justify-center items-center py-10">
+            <div class="w-full max-w-4xl p-6 bg-white shadow-xl rounded-lg">
+                <router-view />
+            </div>
         </div>
-
-        <footer class="footer">
-            <p>© 2023 Ma Todo Liste</p>
+        <footer class="footer bg-primary text-primary-content p-4">
+            <div class="container mx-auto text-center">
+                <p>© 2023 Ma Todo Liste</p>
+            </div>
         </footer>
     </div>
 </template>
 
-
 <style scoped>
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
 #app {
+    display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
 
-.title {
-    text-align: center;
-    margin-bottom: 100px;
-}
-.nav {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding: 10px;
-    background-color: #333;
+footer {
+    margin-top: auto;
+    padding: 1rem;
 }
 
-.nav a {
-    color: white;
-    text-decoration: none;
-}
-
-.nav a:hover {
-    text-decoration: underline;
-}
-
-.main-container {
-    flex-grow: 1;
+.container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
-	min-height: 100vh;
 }
 
-.footer {
-    text-align: center;
-    padding: 10px;
-    background-color: #333;
-    color: white;
-    bottom: 0;
-    width: 99%;
-	padding: 10px;
-	margin-top: 10px;
+.flex-grow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 </style>

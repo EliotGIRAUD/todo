@@ -130,103 +130,242 @@ export default {
 </script>
 
 <template>
-    <div class="todo-board">
-        <form @submit.prevent="editingTask ? updateTask() : addTask()" class="task-form">
-            <input v-model="newTask.title" placeholder="Titre de la tâche" required />
-            <textarea v-model="newTask.description" placeholder="Description"></textarea>
-            <input v-model="newTask.due_date" type="date" placeholder="Date d'échéance" />
-            <div class="select-group">
-                <select v-model="newTask.participant" required>
-                    <option value="" disabled>Choisissez un participant</option>
-                    <option v-for="participant in participants" :key="participant" :value="participant">{{ participant }}</option>
-                </select>
-                <div class="add-button">
-                    <button type="button" @click="addParticipant">+ Ajouter un participant</button>
-                </div>
+    <div class="min-h-screen flex flex-col items-center justify-center bg-base-100 p-6">
+        <div class="card bg-base-100 shadow-xl mb-6 w-full max-w-2xl">
+            <div class="card-body">
+                <h2 class="card-title text-center">Ajouter une nouvelle tâche</h2>
+                <form
+                    @submit.prevent="editingTask ? updateTask() : addTask()"
+                    class="space-y-6"
+                >
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                        <div class="my-4">
+                            <input
+                                v-model="newTask.title"
+                                type="text"
+                                placeholder="Titre de la tâche"
+                                class="input input-bordered w-full"
+                                required
+                            />
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <textarea
+                                v-model="newTask.description"
+                                placeholder="Description de la tâche"
+                                class="textarea textarea-bordered w-full"
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <input
+                                v-model="newTask.due_date"
+                                type="date"
+                                class="input input-bordered w-full"
+                            />
+                        </div>
+
+                        <div class="flex gap-2 items-center">
+                            <select
+                                v-model="newTask.participant"
+                                class="select select-bordered w-full"
+                                required
+                            >
+                                <option value="" disabled>Choisissez un participant</option>
+                                <option
+                                    v-for="participant in participants"
+                                    :key="participant"
+                                    :value="participant"
+                                >
+                                    {{ participant }}
+                                </option>
+                            </select>
+                            <button
+                                type="button"
+                                @click="addParticipant"
+                                class="btn btn-outline btn-sm"
+                            >
+                                + Participant
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2 items-center">
+                            <select
+                                v-model="newTask.typeId"
+                                class="select select-bordered w-full"
+                                required
+                            >
+                                <option value="" disabled>Choisissez un type de tâche</option>
+                                <option
+                                    v-for="(type, index) in taskTypes"
+                                    :key="index"
+                                    :value="index"
+                                >
+                                    {{ type }}
+                                </option>
+                            </select>
+                            <button
+                                type="button"
+                                @click="addTaskType"
+                                class="btn btn-outline btn-sm"
+                            >
+                                + Type
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button
+                            type="submit"
+                            class="btn btn-primary mt-4"
+                        >
+                            {{ editingTask ? 'Mettre à jour' : 'Ajouter la tâche' }}
+                        </button>
+                    </div>
+                </form>
             </div>
-            <div class="select-group">
-                <select v-model="newTask.typeId" required>
-                    <option value="" disabled>Choisissez un type de tâche</option>
-                    <option v-for="(type, index) in taskTypes" :key="index" :value="index">{{ type }}</option>
-                </select>
-                <div class="add-button">
-                    <button type="button" @click="addTaskType">+ Ajouter un type</button>
-                </div>
-            </div>
-            <button type="submit">{{ editingTask ? 'Mettre à jour' : 'Ajouter la tâche' }}</button>
-        </form>
-        <div class="columns">
-            <div class="column" @dragover.prevent @drop="dropTask($event, 'todo')">
-                <h2>À faire</h2>
-                <div v-for="task in tasks.todo" :key="task.id" :draggable="true" @dragstart="dragStart(task)" class="task" :class="{ 'task-todo': task.status === 'todo' }">
-                    <div class="task">
-                        <div class="task-header">
-                            <h3 class="title">{{ task.title }}</h3>
-                            <p class="type">{{ task.type }}</p>
-                        </div>
-                        <p class="description">{{ task.description }}</p>
-                        <div class="task-details">
-                            <p class="participant"><strong>Participant :</strong> {{ task.participant }}</p>
-                            <div class="dates">
-                                <p class="created"><strong>Créée le :</strong> {{ task.createdAt }}</p>
-                                <p class="date"><strong>Échéance :</strong> {{ task.due_date }}</p>
-                            </div>
-                        </div>
-                        <div class="task-actions">
-                            <button @click="editTask(task)">Modifier</button>
-                            <button @click="togglePriority(task)" :class="task.priority">Priorité : {{ task.priority }}</button>
-                            <button @click="deleteTask(task)">Supprimer</button>
-                        </div>
+        </div>
+        <div class="tasks-container">
+            <div class="task-column" @dragover.prevent @drop="dropTask($event, 'todo')">
+                <h2 class="column-title">À faire</h2>
+                <div
+                    v-for="task in tasks.todo"
+                    :key="task.id"
+                    :draggable="true"
+                    @dragstart="dragStart(task)"
+                    class="task-item"
+                >
+                    <div
+                        class="absolute top-2 right-2 px-2 py-1 rounded-full text-white text-xs font-bold"
+                        :class="{
+                            'bg-blue-500': task.type === 'Bug',
+                            'bg-green-500': task.type === 'Feature',
+                            'bg-yellow-500': task.type === 'Task'
+                        }"
+                    >
+                        {{ task.type }}
+                    </div>
+                    <h3 class="text-lg font-semibold">{{ task.title }}</h3>
+                    <p class="text-sm text-gray-700">{{ task.description }}</p>
+                    <div class="task-details mt-2 text-xs text-gray-500">
+                        <p><strong>Participant:</strong> {{ task.participant }}</p>
+                        <p><strong>Créée le:</strong> {{ task.createdAt }} | <strong>Échéance:</strong> {{ task.due_date }}</p>
+                    </div>
+                    <div class="task-actions mt-4 flex justify-center space-x-3">
+                        <button
+                            @click="editTask(task)"
+                            class="btn btn-sm btn-outline"
+                        >
+                            Modifier
+                        </button>
+                        <button
+                            @click="togglePriority(task)"
+                            :class="`btn btn-sm ${task.priority === 'faible' ? 'btn-info' : task.priority === 'moyenne' ? 'btn-warning' : 'btn-error'}`"
+                        >
+                            Priorité: {{ task.priority }}
+                        </button>
+                        <button
+                            @click="deleteTask(task)"
+                            class="btn btn-sm btn-error"
+                        >
+                            Supprimer
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="column" @dragover.prevent @drop="dropTask($event, 'inProgress')">
-                <h2>En cours</h2>
-                <div v-for="task in tasks.inProgress" :key="task.id" :draggable="true" @dragstart="dragStart(task)" class="task" :class="{ 'task-in-progress': task.status === 'inProgress' }">
-                    <div class="task">
-                        <div class="task-header">
-                            <h3 class="title">{{ task.title }}</h3>
-                            <p class="type">{{ task.type }}</p>
-                        </div>
-                        <p class="description">{{ task.description }}</p>
-                        <div class="task-details">
-                            <p class="participant"><strong>Participant :</strong> {{ task.participant }}</p>
-                            <div class="dates">
-                                <p class="created"><strong>Créée le :</strong> {{ task.createdAt }}</p>
-                                <p class="date"><strong>Échéance :</strong> {{ task.due_date }}</p>
-                            </div>
-                        </div>
-                        <div class="task-actions">
-                            <button @click="editTask(task)">Modifier</button>
-                            <button @click="togglePriority(task)" :class="task.priority">Priorité : {{ task.priority }}</button>
-                            <button @click="deleteTask(task)">Supprimer</button>
-                        </div>
+
+            <div class="task-column" @dragover.prevent @drop="dropTask($event, 'inProgress')">
+                <h2 class="column-title">En cours</h2>
+                <div
+                    v-for="task in tasks.inProgress"
+                    :key="task.id"
+                    :draggable="true"
+                    @dragstart="dragStart(task)"
+                    class="task-item"
+                >
+                    <div
+                        class="absolute top-2 right-2 px-2 py-1 rounded-full text-white text-xs font-bold"
+                        :class="{
+                            'bg-blue-500': task.type === 'Bug',
+                            'bg-green-500': task.type === 'Feature',
+                            'bg-yellow-500': task.type === 'Task'
+                        }"
+                    >
+                        {{ task.type }}
+                    </div>
+                    <h3 class="text-lg font-semibold">{{ task.title }}</h3>
+                    <p class="text-sm text-gray-700">{{ task.description }}</p>
+                    <div class="task-details mt-2 text-xs text-gray-500">
+                        <p><strong>Participant:</strong> {{ task.participant }}</p>
+                        <p><strong>Créée le:</strong> {{ task.createdAt }} | <strong>Échéance:</strong> {{ task.due_date }}</p>
+                    </div>
+                    <div class="task-actions mt-4 flex justify-center space-x-3">
+                        <button
+                            @click="editTask(task)"
+                            class="btn btn-sm btn-outline"
+                        >
+                            Modifier
+                        </button>
+                        <button
+                            @click="togglePriority(task)"
+                            :class="`btn btn-sm ${task.priority === 'faible' ? 'btn-info' : task.priority === 'moyenne' ? 'btn-warning' : 'btn-error'}`"
+                        >
+                            Priorité: {{ task.priority }}
+                        </button>
+                        <button
+                            @click="deleteTask(task)"
+                            class="btn btn-sm btn-error"
+                        >
+                            Supprimer
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="column" @dragover.prevent @drop="dropTask($event, 'done')">
-                <div class="done-title">
-                    <h2>Terminé</h2>
-                </div>
-                <div v-for="task in tasks.done" :key="task.id" :draggable="true" @dragstart="dragStart(task)" class="task" :class="{ 'task-done': task.status === 'done' }">
-                    <div class="task">
-                        <div class="task-header">
-                            <h3 class="title">{{ task.title }}</h3>
-                            <p class="type">{{ task.type }}</p>
-                        </div>
-                        <p class="description">{{ task.description }}</p>
-                        <div class="task-details">
-                            <p class="participant"><strong>Participant :</strong> {{ task.participant }}</p>
-                            <div class="dates">
-                                <p class="created"><strong>Créée le :</strong> {{ task.createdAt }}</p>
-                                <p class="date"><strong>Échéance :</strong> {{ task.due_date }}</p>
-                            </div>
-                        </div>
-                        <div class="task-actions">
-                            <button @click="editTask(task)">Modifier</button>
-                            <button @click="togglePriority(task)" :class="task.priority">Priorité : {{ task.priority }}</button>
-                            <button @click="deleteTask(task)">Supprimer</button>
-                        </div>
+
+            <div class="task-column" @dragover.prevent @drop="dropTask($event, 'done')">
+                <h2 class="column-title">Terminées</h2>
+                <div
+                    v-for="task in tasks.done"
+                    :key="task.id"
+                    :draggable="true"
+                    @dragstart="dragStart(task)"
+                    class="task-item"
+                >
+                    <div
+                        class="absolute top-2 right-2 px-2 py-1 rounded-full text-white text-xs font-bold"
+                        :class="{
+                            'bg-blue-500': task.type === 'Bug',
+                            'bg-green-500': task.type === 'Feature',
+                            'bg-yellow-500': task.type === 'Task'
+                        }"
+                    >
+                        {{ task.type }}
+                    </div>
+                    <h3 class="text-lg font-semibold">{{ task.title }}</h3>
+                    <p class="text-sm text-gray-700">{{ task.description }}</p>
+                    <div class="task-details mt-2 text-xs text-gray-500">
+                        <p><strong>Participant:</strong> {{ task.participant }}</p>
+                        <p><strong>Créée le:</strong> {{ task.createdAt }} | <strong>Échéance:</strong> {{ task.due_date }}</p>
+                    </div>
+                    <div class="task-actions mt-4 flex justify-center space-x-3">
+                        <button
+                            @click="editTask(task)"
+                            class="btn btn-sm btn-outline"
+                        >
+                            Modifier
+                        </button>
+                        <button
+                            @click="togglePriority(task)"
+                            :class="`btn btn-sm ${task.priority === 'faible' ? 'btn-info' : task.priority === 'moyenne' ? 'btn-warning' : 'btn-error'}`"
+                        >
+                            Priorité: {{ task.priority }}
+                        </button>
+                        <button
+                            @click="deleteTask(task)"
+                            class="btn btn-sm btn-error"
+                        >
+                            Supprimer
+                        </button>
                     </div>
                 </div>
             </div>
@@ -234,242 +373,44 @@ export default {
     </div>
 </template>
 
-
 <style scoped>
-.todo-board {
-    font-family: 'Arial', sans-serif;
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.task-form {
-    display: flex;
-    flex-direction: column;
+.tasks-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    max-width: 600px;
-    margin: 0 auto;
     padding: 20px;
-    background-color: #f9f9f9;
+}
+
+.task-column {
+    background-color: #f9fafb;
+    padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.add-button {
-    display: flex;
-    justify-content: flex-start;
-    padding-top: 5px;
-}
-
-.task-form input,
-.task-form select,
-.task-form textarea {
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    font-size: 1rem;
-    width: 100%;
-    max-width: 580px;
-}
-
-.task-form button {
-    padding: 10px 20px;
-    background-color: #5c6bc0;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.task-form button:hover {
-    background-color: #3f51b5;
-}
-
-.participant-list {
-    margin-top: 15px;
-}
-
-.participant-list ul {
-    list-style-type: none;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.participant-list li {
-    background-color: #e3f2fd;
-    padding: 10px 20px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    font-size: 0.9rem;
-    white-space: nowrap;
-}
-
-.participant-list button {
-    margin-left: 10px;
-    background-color: #ff3d00;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-
-.participant-list button:hover {
-    background-color: #d32f2f;
-}
-
-.columns {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.column {
-    width: 32%;
-    padding: 15px;
-    background: #f1f1f1;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    box-sizing: border-box;
-}
-
-.column h2 {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
+.column-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 15px;
     text-align: center;
-    color: #333;
 }
 
-.task {
+.task-item {
     background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
     padding: 15px;
-    display: flex;
-    flex-direction: column;
-}
-
-.task-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
 }
 
-.task .title {
-    font-size: 1.2rem;
-    margin: 0;
-}
-
-.task .type {
-    background-color: #8e24aa;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-}
-
-.task-details {
-    margin-top: 10px;
-    font-size: 0.9rem;
-    color: #666;
-}
-
-.task-details .participant {
-    margin-bottom: 5px;
-}
-
-.task-details .dates {
-    display: flex;
-    justify-content: space-between;
-}
-
-.task-actions {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.task-actions button {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    margin: 0 5px;
-}
-
-.task-actions button:hover {
-    background-color: #607d8b;
-    color: white;
-}
-
-.task-actions button:hover {
-    background-color: #607d8b;
-    color: white;
-}
-
-.task-todo {
-    background-color: #ffcccc;
-}
-
-.task-in-progress {
-    background-color: #fff4b3;
-}
-
-.task-done {
-    background-color: #ccffcc;
-    text-decoration: line-through;
-    color: #777;
-}
-
-.task-actions button:first-of-type {
-    background-color: #5bc0de;
-}
-
-.task-actions button:last-of-type {
-    background-color: #d9534f;
-}
-
-.task-actions button.faible {
-    background-color: #007bff;
-}
-
-.task-actions button.moyenne {
-    background-color: #FFCC00;
-}
-
-.task-actions button.élevée {
-    background-color: red;
-}
-
-@media (max-width: 1024px) {
-    .column {
-        width: 48%;
-    }
+.task-item:hover {
+    transform: scale(1.05);
 }
 
 @media (max-width: 768px) {
-    .columns {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .column {
-        width: 100%;
-    }
-
-    .task-form {
-        width: 100%;
+    .tasks-container {
+        grid-template-columns: 1fr;
     }
 }
 </style>
